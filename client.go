@@ -231,15 +231,42 @@ func injectKey(query, key string) string {
 
 // result of a search
 type result struct {
-	Stories              []*Story `json:"hits,omitempty"`
-	NumResults           int      `json:"nbHits,omitempty"`
-	Page                 int      `json:"page,omitempty"`
-	NumPages             int      `json:"nbPages,omitempty"`
-	ResultsPerPage       int      `json:"hitsPerPage,omitempty"`
-	ExhaustiveNumResults bool     `json:"exhaustiveNbHits,omitempty"`
-	Query                string   `json:"query,omitempty"`
-	Params               string   `json:"params,omitempty"`
-	ProcessingTimeMS     int      `json:"processingTimeMS,omitempty"`
+	Stories              []*resultStory `json:"hits,omitempty"`
+	NumResults           int            `json:"nbHits,omitempty"`
+	Page                 int            `json:"page,omitempty"`
+	NumPages             int            `json:"nbPages,omitempty"`
+	ResultsPerPage       int            `json:"hitsPerPage,omitempty"`
+	ExhaustiveNumResults bool           `json:"exhaustiveNbHits,omitempty"`
+	Query                string         `json:"query,omitempty"`
+	Params               string         `json:"params,omitempty"`
+	ProcessingTimeMS     int            `json:"processingTimeMS,omitempty"`
+}
+
+// resultStory is an individual Story from a search result
+type resultStory struct {
+	ID             string    `json:"objectID,omitempty"`
+	Title          string    `json:"title,omitempty"`
+	URL            string    `json:"url,omitempty"`
+	Author         string    `json:"author,omitempty"`
+	CreatedAt      time.Time `json:"created_at,omitempty"`
+	Points         int       `json:"points,omitempty"`
+	StoryText      *string   `json:"story_text,omitempty"`
+	CommentText    *string   `json:"comment_text,omitempty"`
+	NumComments    int       `json:"num_comments,omitempty"`
+	StoryID        *int      `json:"story_id,omitempty"`
+	StoryTitle     *string   `json:"story_title,omitempty"`
+	StoryURL       *string   `json:"story_url,omitempty"`
+	ParentID       *int      `json:"parent_id,omitempty"`
+	CreatedAtI     int       `json:"created_at_i,omitempty"`
+	RelevancyScore *int      `json:"relevancy_score,omitempty"`
+	Tags           []string  `json:"_tags,omitempty"`
+	Highlights     struct {
+		Title     Highlight `json:"title,omitempty"`
+		URL       Highlight `json:"url,omitempty"`
+		Author    Highlight `json:"author,omitempty"`
+		StoryText Highlight `json:"story_text,omitempty"`
+	} `json:"_highlightResult,omitempty"`
+	Children []Children `json:"children"`
 }
 
 // Highlight indicates the words that matched the search query
@@ -272,7 +299,7 @@ func (c *Client) Search(ctx context.Context, search *Search) ([]*Story, error) {
 	if err := json.Unmarshal(body, result); err != nil {
 		return nil, err
 	}
-	return result.Stories, nil
+	return toStories(result)
 }
 
 // Search for Stories. Sorted by date, more recent first.
@@ -298,5 +325,29 @@ func (c *Client) SearchRecent(ctx context.Context, search *Search) ([]*Story, er
 	if err := json.Unmarshal(body, result); err != nil {
 		return nil, err
 	}
-	return result.Stories, nil
+	return toStories(result)
+}
+
+func toStories(result *result) (stories []*Story, err error) {
+	for _, story := range result.Stories {
+		id, err := strconv.Atoi(story.ID)
+		if err != nil {
+			return nil, err
+		}
+		stories = append(stories, &Story{
+			Author:      story.Author,
+			Children:    []Children{},
+			CreatedAt:   story.CreatedAt,
+			CreatedAtI:  story.CreatedAtI,
+			ID:          id,
+			NumComments: story.NumComments,
+			ParentID:    story.ParentID,
+			Points:      story.Points,
+			StoryID:     story.StoryID,
+			Title:       story.Title,
+			Text:        nil,
+			URL:         story.URL,
+		})
+	}
+	return stories, nil
 }

@@ -2,7 +2,6 @@ package hackernews_test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -63,16 +62,17 @@ func TestFrontPage(t *testing.T) {
 	stories, err := hn.FrontPage(ctx)
 	is.NoErr(err)
 	is.Equal(len(stories), 34) // 34 front page stories
+	for _, story := range stories {
+		is.True(story.ID != 0) // story has an ID
+	}
 }
 
 func TestFind(t *testing.T) {
 	is := is.New(t)
 	ctx := context.Background()
 	hn := hackernews.New()
-	post, err := hn.Find(ctx, 1)
+	story, err := hn.Find(ctx, 1)
 	is.NoErr(err)
-	is.Equal(post.Title, "Y Combinator") // title is not Y Combinator
-	buf, err := json.MarshalIndent(post, "", "  ")
-	is.NoErr(err)
-	fmt.Println(string(buf))
+	is.Equal(story.ID, 1)
+	is.Equal(story.Title, "Y Combinator") // title is not Y Combinator
 }
