@@ -335,33 +335,3 @@ func (c *Client) SearchRecent(ctx context.Context, search *Search) ([]*Story, er
 	}
 	return result.Stories, nil
 }
-
-// func toNews(result *result) (*News, error) {
-// 	news := &News{
-// 		NumResults:     result.NumResults,
-// 		Page:           result.Page,
-// 		NumPages:       result.NumPages,
-// 		ResultsPerPage: result.ResultsPerPage,
-// 	}
-// 	for _, story := range result.Stories {
-// 		id, err := strconv.Atoi(story.ID)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		news.Stories = append(news.Stories, &Story{
-// 			Author:      story.Author,
-// 			Children:    []Children{},
-// 			CreatedAt:   story.CreatedAt,
-// 			CreatedAtI:  story.CreatedAtI,
-// 			ID:          id,
-// 			NumComments: story.NumComments,
-// 			ParentID:    story.ParentID,
-// 			Points:      story.Points,
-// 			StoryID:     story.StoryID,
-// 			Title:       story.Title,
-// 			Text:        nil,
-// 			URL:         story.URL,
-// 		})
-// 	}
-// 	return news, nil
-// }
