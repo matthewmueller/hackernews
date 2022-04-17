@@ -4,7 +4,7 @@
 
 Simple Hacker News client for Go. Currently only supports reading from Hacker News.
 
-## Example
+## Examples
 
 ### List stories from the front page
 
