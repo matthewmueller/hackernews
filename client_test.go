@@ -14,54 +14,62 @@ func TestSearch(t *testing.T) {
 	is := is.New(t)
 	ctx := context.Background()
 	hn := hackernews.New()
-	result, err := hn.SearchRecent(ctx, &hackernews.Search{
+	stories, err := hn.SearchRecent(ctx, &hackernews.Search{
 		Points: "> 500",
 	})
 	is.NoErr(err)
-	is.Equal(len(result.Stories), 34) // 34 newest stories over 500 points
+	is.Equal(len(stories), 34) // 34 newest stories over 500 points
+}
+
+func ExampleClient() {
+	ctx := context.Background()
+	hn := hackernews.New()
+	stories, _ := hn.FrontPage(ctx)
+	fmt.Println(len(stories))
+	// Output: 34
 }
 
 func TestShowHN(t *testing.T) {
 	is := is.New(t)
 	ctx := context.Background()
 	hn := hackernews.New()
-	result, err := hn.ShowHN(ctx)
+	stories, err := hn.ShowHN(ctx)
 	is.NoErr(err)
-	is.Equal(len(result.Stories), 34) // 34 show stories
+	is.Equal(len(stories), 34) // 34 show stories
 }
 
 func TestAskHN(t *testing.T) {
 	is := is.New(t)
 	ctx := context.Background()
 	hn := hackernews.New()
-	result, err := hn.AskHN(ctx)
+	stories, err := hn.AskHN(ctx)
 	is.NoErr(err)
-	is.Equal(len(result.Stories), 34) // 34 ask stories
+	is.Equal(len(stories), 34) // 34 ask stories
 }
 
 func TestNewest(t *testing.T) {
 	is := is.New(t)
 	ctx := context.Background()
 	hn := hackernews.New()
-	result, err := hn.Newest(ctx)
+	stories, err := hn.Newest(ctx)
 	is.NoErr(err)
-	is.Equal(len(result.Stories), 34) // 34 newest stories
+	is.Equal(len(stories), 34) // 34 newest stories
 }
 
 func TestFrontPage(t *testing.T) {
 	is := is.New(t)
 	ctx := context.Background()
 	hn := hackernews.New()
-	result, err := hn.FrontPage(ctx)
+	stories, err := hn.FrontPage(ctx)
 	is.NoErr(err)
-	is.Equal(len(result.Stories), 34) // 34 front page stories
+	is.Equal(len(stories), 34) // 34 front page stories
 }
 
 func TestFind(t *testing.T) {
 	is := is.New(t)
 	ctx := context.Background()
 	hn := hackernews.New()
-	post, err := hn.Find(ctx, "1")
+	post, err := hn.Find(ctx, 1)
 	is.NoErr(err)
 	is.Equal(post.Title, "Y Combinator") // title is not Y Combinator
 	buf, err := json.MarshalIndent(post, "", "  ")

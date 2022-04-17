@@ -1,4 +1,4 @@
-// Package hn is a simple HTTP client for Hacker News.
+// Package hackernews is a simple HTTP client for Hacker News.
 //
 // Algolia graciously provided an API for working with Hacker News over at:
 // https://hn.algolia.com/api
@@ -31,7 +31,7 @@ type Client struct {
 
 // FrontPage is a convenience function for getting the results on
 // https://hackernews.com
-func (c *Client) FrontPage(ctx context.Context) (*News, error) {
+func (c *Client) FrontPage(ctx context.Context) ([]*Story, error) {
 	return c.Search(ctx, &Search{
 		Tags: "front_page",
 	})
@@ -39,7 +39,7 @@ func (c *Client) FrontPage(ctx context.Context) (*News, error) {
 
 // Newest is a convenience function for getting the results on
 // https://news.ycombinator.com/newest
-func (c *Client) Newest(ctx context.Context) (*News, error) {
+func (c *Client) Newest(ctx context.Context) ([]*Story, error) {
 	return c.SearchRecent(ctx, &Search{
 		Tags: "story",
 	})
@@ -47,7 +47,7 @@ func (c *Client) Newest(ctx context.Context) (*News, error) {
 
 // AskHN is a convenience function for getting the results on
 // https://news.ycombinator.com/ask
-func (c *Client) AskHN(ctx context.Context) (*News, error) {
+func (c *Client) AskHN(ctx context.Context) ([]*Story, error) {
 	return c.SearchRecent(ctx, &Search{
 		Tags: "ask_hn",
 	})
@@ -55,7 +55,7 @@ func (c *Client) AskHN(ctx context.Context) (*News, error) {
 
 // ShowHN is a convenience function for getting the results on
 // https://news.ycombinator.com/show
-func (c *Client) ShowHN(ctx context.Context) (*News, error) {
+func (c *Client) ShowHN(ctx context.Context) ([]*Story, error) {
 	return c.SearchRecent(ctx, &Search{
 		Tags: "show_hn",
 	})
@@ -78,7 +78,7 @@ type Story struct {
 	Children    []Children `json:"children"`
 }
 
-// Children contain comments.
+// Children are the comments.
 type Children struct {
 	ID         int        `json:"id,omitempty"`
 	CreatedAt  time.Time  `json:"created_at,omitempty"`
@@ -94,9 +94,9 @@ type Children struct {
 	Children   []Children `json:"children"`
 }
 
-// Find a Story by ID.
-func (c *Client) Find(ctx context.Context, id string) (*Story, error) {
-	url := baseURL + "/items/" + id
+// Find a Story by its id.
+func (c *Client) Find(ctx context.Context, id int) (*Story, error) {
+	url := fmt.Sprintf("%s/items/%d", baseURL, id)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -231,15 +231,15 @@ func injectKey(query, key string) string {
 
 // result of a search
 type result struct {
-	Stories              []*resultStory `json:"hits,omitempty"`
-	NumResults           int            `json:"nbHits,omitempty"`
-	Page                 int            `json:"page,omitempty"`
-	NumPages             int            `json:"nbPages,omitempty"`
-	ResultsPerPage       int            `json:"hitsPerPage,omitempty"`
-	ExhaustiveNumResults bool           `json:"exhaustiveNbHits,omitempty"`
-	Query                string         `json:"query,omitempty"`
-	Params               string         `json:"params,omitempty"`
-	ProcessingTimeMS     int            `json:"processingTimeMS,omitempty"`
+	Stories              []*Story `json:"hits,omitempty"`
+	NumResults           int      `json:"nbHits,omitempty"`
+	Page                 int      `json:"page,omitempty"`
+	NumPages             int      `json:"nbPages,omitempty"`
+	ResultsPerPage       int      `json:"hitsPerPage,omitempty"`
+	ExhaustiveNumResults bool     `json:"exhaustiveNbHits,omitempty"`
+	Query                string   `json:"query,omitempty"`
+	Params               string   `json:"params,omitempty"`
+	ProcessingTimeMS     int      `json:"processingTimeMS,omitempty"`
 }
 
 type News struct {
@@ -285,7 +285,7 @@ type Highlight struct {
 }
 
 // Search for Stories. Sorted by relevance, then points, then number of comments.
-func (c *Client) Search(ctx context.Context, search *Search) (*News, error) {
+func (c *Client) Search(ctx context.Context, search *Search) ([]*Story, error) {
 	url := baseURL + "/search?" + search.querystring()
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -307,11 +307,11 @@ func (c *Client) Search(ctx context.Context, search *Search) (*News, error) {
 	if err := json.Unmarshal(body, result); err != nil {
 		return nil, err
 	}
-	return toNews(result)
+	return result.Stories, nil
 }
 
 // Search for Stories. Sorted by date, more recent first.
-func (c *Client) SearchRecent(ctx context.Context, search *Search) (*News, error) {
+func (c *Client) SearchRecent(ctx context.Context, search *Search) ([]*Story, error) {
 	url := baseURL + "/search_by_date?" + search.querystring()
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -333,35 +333,35 @@ func (c *Client) SearchRecent(ctx context.Context, search *Search) (*News, error
 	if err := json.Unmarshal(body, result); err != nil {
 		return nil, err
 	}
-	return toNews(result)
+	return result.Stories, nil
 }
 
-func toNews(result *result) (*News, error) {
-	news := &News{
-		NumResults:     result.NumResults,
-		Page:           result.Page,
-		NumPages:       result.NumPages,
-		ResultsPerPage: result.ResultsPerPage,
-	}
-	for _, story := range result.Stories {
-		id, err := strconv.Atoi(story.ID)
-		if err != nil {
-			return nil, err
-		}
-		news.Stories = append(news.Stories, &Story{
-			Author:      story.Author,
-			Children:    []Children{},
-			CreatedAt:   story.CreatedAt,
-			CreatedAtI:  story.CreatedAtI,
-			ID:          id,
-			NumComments: story.NumComments,
-			ParentID:    story.ParentID,
-			Points:      story.Points,
-			StoryID:     story.StoryID,
-			Title:       story.Title,
-			Text:        nil,
-			URL:         story.URL,
-		})
-	}
-	return news, nil
-}
+// func toNews(result *result) (*News, error) {
+// 	news := &News{
+// 		NumResults:     result.NumResults,
+// 		Page:           result.Page,
+// 		NumPages:       result.NumPages,
+// 		ResultsPerPage: result.ResultsPerPage,
+// 	}
+// 	for _, story := range result.Stories {
+// 		id, err := strconv.Atoi(story.ID)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		news.Stories = append(news.Stories, &Story{
+// 			Author:      story.Author,
+// 			Children:    []Children{},
+// 			CreatedAt:   story.CreatedAt,
+// 			CreatedAtI:  story.CreatedAtI,
+// 			ID:          id,
+// 			NumComments: story.NumComments,
+// 			ParentID:    story.ParentID,
+// 			Points:      story.Points,
+// 			StoryID:     story.StoryID,
+// 			Title:       story.Title,
+// 			Text:        nil,
+// 			URL:         story.URL,
+// 		})
+// 	}
+// 	return news, nil
+// }
