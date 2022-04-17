@@ -4,6 +4,12 @@
 
 Simple Hacker News client for Go. Currently only supports reading from Hacker News.
 
+```go
+hn := hackernews.New()
+ctx := context.Background()
+stories, err := hn.FrontPage(ctx)
+```
+
 ## Install
 
 ```sh
