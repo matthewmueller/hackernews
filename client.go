@@ -242,41 +242,6 @@ type result struct {
 	ProcessingTimeMS     int      `json:"processingTimeMS,omitempty"`
 }
 
-type News struct {
-	Stories        []*Story `json:"stories,omitempty"`
-	NumResults     int      `json:"num_results,omitempty"`
-	Page           int      `json:"page,omitempty"`
-	NumPages       int      `json:"num_pages,omitempty"`
-	ResultsPerPage int      `json:"stories_per_page,omitempty"`
-}
-
-// resultStory is an individual Story from a search result
-type resultStory struct {
-	ID             string    `json:"objectID,omitempty"`
-	Title          string    `json:"title,omitempty"`
-	URL            string    `json:"url,omitempty"`
-	Author         string    `json:"author,omitempty"`
-	CreatedAt      time.Time `json:"created_at,omitempty"`
-	Points         int       `json:"points,omitempty"`
-	StoryText      *string   `json:"story_text,omitempty"`
-	CommentText    *string   `json:"comment_text,omitempty"`
-	NumComments    int       `json:"num_comments,omitempty"`
-	StoryID        *int      `json:"story_id,omitempty"`
-	StoryTitle     *string   `json:"story_title,omitempty"`
-	StoryURL       *string   `json:"story_url,omitempty"`
-	ParentID       *int      `json:"parent_id,omitempty"`
-	CreatedAtI     int       `json:"created_at_i,omitempty"`
-	RelevancyScore *int      `json:"relevancy_score,omitempty"`
-	Tags           []string  `json:"_tags,omitempty"`
-	Highlights     struct {
-		Title     Highlight `json:"title,omitempty"`
-		URL       Highlight `json:"url,omitempty"`
-		Author    Highlight `json:"author,omitempty"`
-		StoryText Highlight `json:"story_text,omitempty"`
-	} `json:"_highlightResult,omitempty"`
-	Children []Children `json:"children"`
-}
-
 // Highlight indicates the words that matched the search query
 type Highlight struct {
 	Value        string   `json:"value,omitempty"`
