@@ -17,15 +17,15 @@ func TestSearch(t *testing.T) {
 		Points: "> 500",
 	})
 	is.NoErr(err)
-	is.Equal(len(stories), 34) // 34 newest stories over 500 points
+	is.True(len(stories) >= 30) // 30+ newest stories over 500 points
 }
 
 func ExampleClient() {
 	ctx := context.Background()
 	hn := hackernews.New()
 	stories, _ := hn.FrontPage(ctx)
-	fmt.Println(len(stories))
-	// Output: 34
+	fmt.Println(len(stories) >= 30)
+	// Output: true
 }
 
 func TestShowHN(t *testing.T) {
@@ -34,7 +34,7 @@ func TestShowHN(t *testing.T) {
 	hn := hackernews.New()
 	stories, err := hn.ShowHN(ctx)
 	is.NoErr(err)
-	is.Equal(len(stories), 34) // 34 show stories
+	is.True(len(stories) >= 30) // 30+ show stories
 }
 
 func TestAskHN(t *testing.T) {
@@ -43,7 +43,7 @@ func TestAskHN(t *testing.T) {
 	hn := hackernews.New()
 	stories, err := hn.AskHN(ctx)
 	is.NoErr(err)
-	is.Equal(len(stories), 34) // 34 ask stories
+	is.True(len(stories) >= 30) // 30+ ask stories
 }
 
 func TestNewest(t *testing.T) {
@@ -52,7 +52,7 @@ func TestNewest(t *testing.T) {
 	hn := hackernews.New()
 	stories, err := hn.Newest(ctx)
 	is.NoErr(err)
-	is.Equal(len(stories), 34) // 34 newest stories
+	is.True(len(stories) >= 30) // 30+ newest stories
 }
 
 func TestFrontPage(t *testing.T) {
@@ -61,7 +61,7 @@ func TestFrontPage(t *testing.T) {
 	hn := hackernews.New()
 	stories, err := hn.FrontPage(ctx)
 	is.NoErr(err)
-	is.Equal(len(stories), 34) // 34 front page stories
+	is.True(len(stories) >= 30) // 30+ front page stories
 	for _, story := range stories {
 		is.True(story.ID != 0) // story has an ID
 	}

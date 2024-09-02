@@ -33,7 +33,7 @@ story, err := hn.Find(ctx, 1)
 ## Install
 
 ```sh
-go get -u github.com/matthewmueller/gotext
+go get -u github.com/matthewmueller/hackernews
 ```
 
 ## Authors

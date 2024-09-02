@@ -8,7 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"sort"
@@ -106,7 +106,7 @@ func (c *Client) Find(ctx context.Context, id int) (*Story, error) {
 		return nil, err
 	}
 	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -266,7 +266,7 @@ type resultStory struct {
 		Author    Highlight `json:"author,omitempty"`
 		StoryText Highlight `json:"story_text,omitempty"`
 	} `json:"_highlightResult,omitempty"`
-	Children []Children `json:"children"`
+	Children []int `json:"children"`
 }
 
 // Highlight indicates the words that matched the search query
@@ -288,7 +288,7 @@ func (c *Client) Search(ctx context.Context, search *Search) ([]*Story, error) {
 		return nil, err
 	}
 	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -314,7 +314,7 @@ func (c *Client) SearchRecent(ctx context.Context, search *Search) ([]*Story, er
 		return nil, err
 	}
 	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
