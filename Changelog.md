@@ -1,3 +1,8 @@
+# 0.6.0 / 2024-09-08
+
+- Breaking: `Search` and `SearchRecent` now return search results wrapper.
+  Use `result.Stories()` to get the stories of the search result.
+
 # 0.5.0 / 2024-09-08
 
 - support multiple pages queries
