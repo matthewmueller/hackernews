@@ -13,9 +13,11 @@ func TestSearch(t *testing.T) {
 	is := is.New(t)
 	ctx := context.Background()
 	hn := hackernews.New()
-	stories, err := hn.SearchRecent(ctx, &hackernews.Search{
+	result, err := hn.SearchRecent(ctx, &hackernews.SearchRequest{
 		Points: "> 500",
 	})
+	is.NoErr(err)
+	stories, err := result.Stories()
 	is.NoErr(err)
 	is.True(len(stories) >= 10) // 10+ newest stories over 500 points
 }
@@ -25,7 +27,7 @@ func ExampleClient() {
 	hn := hackernews.New()
 	stories, _ := hn.FrontPage(ctx)
 	fmt.Println(len(stories) >= 10)
-	//10utput: true
+	// Output: true
 }
 
 func TestShowHN(t *testing.T) {
@@ -71,18 +73,22 @@ func TestSecondPage(t *testing.T) {
 	is := is.New(t)
 	ctx := context.Background()
 	hn := hackernews.New()
-	firstPage, err := hn.Search(ctx, &hackernews.Search{
+	result, err := hn.Search(ctx, &hackernews.SearchRequest{
 		Tags: "front_page",
 	})
+	is.NoErr(err)
+	firstPage, err := result.Stories()
 	is.NoErr(err)
 	is.True(len(firstPage) >= 10) // 10+ front page stories
 	for _, story := range firstPage {
 		is.True(story.ID != 0) // story has an ID
 	}
-	secondPage, err := hn.Search(ctx, &hackernews.Search{
+	result, err = hn.Search(ctx, &hackernews.SearchRequest{
 		Tags: "front_page",
 		Page: 1,
 	})
+	is.NoErr(err)
+	secondPage, err := result.Stories()
 	is.NoErr(err)
 	is.True(len(secondPage) >= 10) // 10+ front page stories
 	for _, story := range secondPage {

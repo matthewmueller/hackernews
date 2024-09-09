@@ -32,33 +32,49 @@ type Client struct {
 // FrontPage is a convenience function for getting the results on
 // https://hackernews.com
 func (c *Client) FrontPage(ctx context.Context) ([]*Story, error) {
-	return c.Search(ctx, &Search{
+	results, err := c.Search(ctx, &SearchRequest{
 		Tags: "front_page",
 	})
+	if err != nil {
+		return nil, err
+	}
+	return results.Stories()
 }
 
 // Newest is a convenience function for getting the results on
 // https://news.ycombinator.com/newest
 func (c *Client) Newest(ctx context.Context) ([]*Story, error) {
-	return c.SearchRecent(ctx, &Search{
+	result, err := c.SearchRecent(ctx, &SearchRequest{
 		Tags: "story",
 	})
+	if err != nil {
+		return nil, err
+	}
+	return result.Stories()
 }
 
 // AskHN is a convenience function for getting the results on
 // https://news.ycombinator.com/ask
 func (c *Client) AskHN(ctx context.Context) ([]*Story, error) {
-	return c.SearchRecent(ctx, &Search{
+	result, err := c.SearchRecent(ctx, &SearchRequest{
 		Tags: "ask_hn",
 	})
+	if err != nil {
+		return nil, err
+	}
+	return result.Stories()
 }
 
 // ShowHN is a convenience function for getting the results on
 // https://news.ycombinator.com/show
 func (c *Client) ShowHN(ctx context.Context) ([]*Story, error) {
-	return c.SearchRecent(ctx, &Search{
+	result, err := c.SearchRecent(ctx, &SearchRequest{
 		Tags: "show_hn",
 	})
+	if err != nil {
+		return nil, err
+	}
+	return result.Stories()
 }
 
 // Story is an individual entry on HackerNews.
@@ -143,8 +159,8 @@ func recursivelySort(children []Children) {
 	}
 }
 
-// Search query and filters
-type Search struct {
+// SearchRequest query and filters
+type SearchRequest struct {
 	// Full-text query to search for (e.g. Duo)
 	Query string
 
@@ -186,7 +202,7 @@ type Search struct {
 }
 
 // Turns the search input into a query string.
-func (s *Search) querystring() string {
+func (s *SearchRequest) querystring() string {
 	query := url.Values{}
 	if s.Query != "" {
 		query.Set("query", s.Query)
@@ -230,21 +246,46 @@ func injectKey(query, key string) string {
 	return strings.Join(parts, ",")
 }
 
-// result of a search
-type result struct {
-	Stories              []*resultStory `json:"hits,omitempty"`
-	NumResults           int            `json:"nbHits,omitempty"`
-	Page                 int            `json:"page,omitempty"`
-	NumPages             int            `json:"nbPages,omitempty"`
-	ResultsPerPage       int            `json:"hitsPerPage,omitempty"`
-	ExhaustiveNumResults bool           `json:"exhaustiveNbHits,omitempty"`
-	Query                string         `json:"query,omitempty"`
-	Params               string         `json:"params,omitempty"`
-	ProcessingTimeMS     int            `json:"processingTimeMS,omitempty"`
+// SearchResponse of a search
+type SearchResponse struct {
+	Hits                 []*Hit `json:"hits,omitempty"`
+	NumResults           int    `json:"nbHits,omitempty"`
+	Page                 int    `json:"page,omitempty"`
+	NumPages             int    `json:"nbPages,omitempty"`
+	ResultsPerPage       int    `json:"hitsPerPage,omitempty"`
+	ExhaustiveNumResults bool   `json:"exhaustiveNbHits,omitempty"`
+	Query                string `json:"query,omitempty"`
+	Params               string `json:"params,omitempty"`
+	ProcessingTimeMS     int    `json:"processingTimeMS,omitempty"`
 }
 
-// resultStory is an individual Story from a search result
-type resultStory struct {
+func (s *SearchResponse) Stories() ([]*Story, error) {
+	stories := make([]*Story, len(s.Hits))
+	for i, story := range s.Hits {
+		id, err := strconv.Atoi(story.ID)
+		if err != nil {
+			return nil, err
+		}
+		stories[i] = &Story{
+			Author:      story.Author,
+			Children:    []Children{},
+			CreatedAt:   story.CreatedAt,
+			CreatedAtI:  story.CreatedAtI,
+			ID:          id,
+			NumComments: story.NumComments,
+			ParentID:    story.ParentID,
+			Points:      story.Points,
+			StoryID:     story.StoryID,
+			Title:       story.Title,
+			Text:        nil,
+			URL:         story.URL,
+		}
+	}
+	return stories, nil
+}
+
+// Hit is an individual search result (story or comment)
+type Hit struct {
 	ID             string    `json:"objectID,omitempty"`
 	Title          string    `json:"title,omitempty"`
 	URL            string    `json:"url,omitempty"`
@@ -278,7 +319,7 @@ type Highlight struct {
 }
 
 // Search for Stories. Sorted by relevance, then points, then number of comments.
-func (c *Client) Search(ctx context.Context, search *Search) ([]*Story, error) {
+func (c *Client) Search(ctx context.Context, search *SearchRequest) (*SearchResponse, error) {
 	url := baseURL + "/search?" + search.querystring()
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -296,15 +337,15 @@ func (c *Client) Search(ctx context.Context, search *Search) ([]*Story, error) {
 	if res.StatusCode != 200 {
 		return nil, fmt.Errorf("unexpected status %d: %s", res.StatusCode, string(body))
 	}
-	result := new(result)
+	result := new(SearchResponse)
 	if err := json.Unmarshal(body, result); err != nil {
 		return nil, err
 	}
-	return toStories(result)
+	return result, nil
 }
 
 // Search for Stories. Sorted by date, more recent first.
-func (c *Client) SearchRecent(ctx context.Context, search *Search) ([]*Story, error) {
+func (c *Client) SearchRecent(ctx context.Context, search *SearchRequest) (*SearchResponse, error) {
 	url := baseURL + "/search_by_date?" + search.querystring()
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -322,33 +363,9 @@ func (c *Client) SearchRecent(ctx context.Context, search *Search) ([]*Story, er
 	if res.StatusCode != 200 {
 		return nil, fmt.Errorf("unexpected status %d: %s", res.StatusCode, string(body))
 	}
-	result := new(result)
+	result := new(SearchResponse)
 	if err := json.Unmarshal(body, result); err != nil {
 		return nil, err
 	}
-	return toStories(result)
-}
-
-func toStories(result *result) (stories []*Story, err error) {
-	for _, story := range result.Stories {
-		id, err := strconv.Atoi(story.ID)
-		if err != nil {
-			return nil, err
-		}
-		stories = append(stories, &Story{
-			Author:      story.Author,
-			Children:    []Children{},
-			CreatedAt:   story.CreatedAt,
-			CreatedAtI:  story.CreatedAtI,
-			ID:          id,
-			NumComments: story.NumComments,
-			ParentID:    story.ParentID,
-			Points:      story.Points,
-			StoryID:     story.StoryID,
-			Title:       story.Title,
-			Text:        nil,
-			URL:         story.URL,
-		})
-	}
-	return stories, nil
+	return result, nil
 }
