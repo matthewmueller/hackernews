@@ -32,49 +32,53 @@ type Client struct {
 // FrontPage is a convenience function for getting the results on
 // https://hackernews.com
 func (c *Client) FrontPage(ctx context.Context) ([]*Story, error) {
-	results, err := c.Search(ctx, &SearchRequest{
-		Tags: "front_page",
+	result, err := c.Search(ctx, &SearchRequest{
+		Tags:           "front_page",
+		ResultsPerPage: 34,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return results.Stories()
+	return result.Stories, nil
 }
 
 // Newest is a convenience function for getting the results on
 // https://news.ycombinator.com/newest
 func (c *Client) Newest(ctx context.Context) ([]*Story, error) {
 	result, err := c.SearchRecent(ctx, &SearchRequest{
-		Tags: "story",
+		Tags:           "story",
+		ResultsPerPage: 34,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return result.Stories()
+	return result.Stories, nil
 }
 
 // AskHN is a convenience function for getting the results on
 // https://news.ycombinator.com/ask
 func (c *Client) AskHN(ctx context.Context) ([]*Story, error) {
 	result, err := c.SearchRecent(ctx, &SearchRequest{
-		Tags: "ask_hn",
+		Tags:           "ask_hn",
+		ResultsPerPage: 34,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return result.Stories()
+	return result.Stories, nil
 }
 
 // ShowHN is a convenience function for getting the results on
 // https://news.ycombinator.com/show
 func (c *Client) ShowHN(ctx context.Context) ([]*Story, error) {
 	result, err := c.SearchRecent(ctx, &SearchRequest{
-		Tags: "show_hn",
+		Tags:           "show_hn",
+		ResultsPerPage: 34,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return result.Stories()
+	return result.Stories, nil
 }
 
 // Story is an individual entry on HackerNews.
@@ -248,18 +252,19 @@ func injectKey(query, key string) string {
 
 // SearchResponse of a search
 type SearchResponse struct {
-	Hits                 []*Hit `json:"hits,omitempty"`
-	NumResults           int    `json:"nbHits,omitempty"`
-	Page                 int    `json:"page,omitempty"`
-	NumPages             int    `json:"nbPages,omitempty"`
-	ResultsPerPage       int    `json:"hitsPerPage,omitempty"`
-	ExhaustiveNumResults bool   `json:"exhaustiveNbHits,omitempty"`
-	Query                string `json:"query,omitempty"`
-	Params               string `json:"params,omitempty"`
-	ProcessingTimeMS     int    `json:"processingTimeMS,omitempty"`
+	Stories              []*Story `json:"stories,omitempty"`
+	Hits                 []*Hit   `json:"hits,omitempty"`
+	NumResults           int      `json:"nbHits,omitempty"`
+	Page                 int      `json:"page,omitempty"`
+	NumPages             int      `json:"nbPages,omitempty"`
+	ResultsPerPage       int      `json:"hitsPerPage,omitempty"`
+	ExhaustiveNumResults bool     `json:"exhaustiveNbHits,omitempty"`
+	Query                string   `json:"query,omitempty"`
+	Params               string   `json:"params,omitempty"`
+	ProcessingTimeMS     int      `json:"processingTimeMS,omitempty"`
 }
 
-func (s *SearchResponse) Stories() ([]*Story, error) {
+func toStories(s *SearchResponse) ([]*Story, error) {
 	stories := make([]*Story, len(s.Hits))
 	for i, story := range s.Hits {
 		id, err := strconv.Atoi(story.ID)
@@ -320,6 +325,9 @@ type Highlight struct {
 
 // Search for Stories. Sorted by relevance, then points, then number of comments.
 func (c *Client) Search(ctx context.Context, search *SearchRequest) (*SearchResponse, error) {
+	if search.Page >= 1 {
+		search.Page = search.Page - 1
+	}
 	url := baseURL + "/search?" + search.querystring()
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -341,6 +349,13 @@ func (c *Client) Search(ctx context.Context, search *SearchRequest) (*SearchResp
 	if err := json.Unmarshal(body, result); err != nil {
 		return nil, err
 	}
+	result.Page++
+	// Convert the hits to stories
+	stories, err := toStories(result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert hits to stories: %w", err)
+	}
+	result.Stories = stories
 	return result, nil
 }
 
@@ -367,5 +382,11 @@ func (c *Client) SearchRecent(ctx context.Context, search *SearchRequest) (*Sear
 	if err := json.Unmarshal(body, result); err != nil {
 		return nil, err
 	}
+	// Convert the hits to stories
+	stories, err := toStories(result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert hits to stories: %w", err)
+	}
+	result.Stories = stories
 	return result, nil
 }
