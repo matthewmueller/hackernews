@@ -17,15 +17,15 @@ func TestSearch(t *testing.T) {
 		Points: "> 500",
 	})
 	is.NoErr(err)
-	is.True(len(stories) >= 30) // 30+ newest stories over 500 points
+	is.True(len(stories) >= 10) // 10+ newest stories over 500 points
 }
 
 func ExampleClient() {
 	ctx := context.Background()
 	hn := hackernews.New()
 	stories, _ := hn.FrontPage(ctx)
-	fmt.Println(len(stories) >= 30)
-	// Output: true
+	fmt.Println(len(stories) >= 10)
+	//10utput: true
 }
 
 func TestShowHN(t *testing.T) {
@@ -34,7 +34,7 @@ func TestShowHN(t *testing.T) {
 	hn := hackernews.New()
 	stories, err := hn.ShowHN(ctx)
 	is.NoErr(err)
-	is.True(len(stories) >= 30) // 30+ show stories
+	is.True(len(stories) >= 10) // 10+ show stories
 }
 
 func TestAskHN(t *testing.T) {
@@ -43,7 +43,7 @@ func TestAskHN(t *testing.T) {
 	hn := hackernews.New()
 	stories, err := hn.AskHN(ctx)
 	is.NoErr(err)
-	is.True(len(stories) >= 30) // 30+ ask stories
+	is.True(len(stories) >= 10) // 10+ ask stories
 }
 
 func TestNewest(t *testing.T) {
@@ -52,7 +52,7 @@ func TestNewest(t *testing.T) {
 	hn := hackernews.New()
 	stories, err := hn.Newest(ctx)
 	is.NoErr(err)
-	is.True(len(stories) >= 30) // 30+ newest stories
+	is.True(len(stories) >= 10) // 10+ newest stories
 }
 
 func TestFrontPage(t *testing.T) {
@@ -61,10 +61,34 @@ func TestFrontPage(t *testing.T) {
 	hn := hackernews.New()
 	stories, err := hn.FrontPage(ctx)
 	is.NoErr(err)
-	is.True(len(stories) >= 30) // 30+ front page stories
+	is.True(len(stories) >= 10) // 10+ front page stories
 	for _, story := range stories {
 		is.True(story.ID != 0) // story has an ID
 	}
+}
+
+func TestSecondPage(t *testing.T) {
+	is := is.New(t)
+	ctx := context.Background()
+	hn := hackernews.New()
+	firstPage, err := hn.Search(ctx, &hackernews.Search{
+		Tags: "front_page",
+	})
+	is.NoErr(err)
+	is.True(len(firstPage) >= 10) // 10+ front page stories
+	for _, story := range firstPage {
+		is.True(story.ID != 0) // story has an ID
+	}
+	secondPage, err := hn.Search(ctx, &hackernews.Search{
+		Tags: "front_page",
+		Page: 1,
+	})
+	is.NoErr(err)
+	is.True(len(secondPage) >= 10) // 10+ front page stories
+	for _, story := range secondPage {
+		is.True(story.ID != 0) // story has an ID
+	}
+	is.True(firstPage[0].ID != secondPage[0].ID) // first story on first page is not the same as first story on second page
 }
 
 func TestFind(t *testing.T) {

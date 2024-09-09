@@ -71,7 +71,7 @@ type Story struct {
 	Title       string     `json:"title,omitempty"`
 	URL         string     `json:"url,omitempty"`
 	Text        *string    `json:"text,omitempty"`
-	NumComments int        `json:"num_comments,omitempty"`
+	NumComments *int       `json:"num_comments,omitempty"`
 	Points      int        `json:"points,omitempty"`
 	ParentID    *int       `json:"parent_id,omitempty"`
 	StoryID     *int       `json:"story_id,omitempty"`
@@ -194,6 +194,9 @@ func (s *Search) querystring() string {
 	if s.Tags != "" {
 		query.Set("tags", s.Tags)
 	}
+	if s.Page > 0 {
+		query.Set("page", strconv.Itoa(s.Page))
+	}
 	var nfs []string
 	if s.Points != "" {
 		nfs = append(nfs, injectKey(s.Points, "points"))
@@ -208,11 +211,9 @@ func (s *Search) querystring() string {
 		query.Set("numericFilters", strings.Join(nfs, ","))
 	}
 	// Set the number of results per page
-	if s.ResultsPerPage == 0 {
-		// For some reason the number of results returned by default is 34 results
-		s.ResultsPerPage = 34
+	if s.ResultsPerPage > 0 {
+		query.Set("hitsPerPage", strconv.Itoa(s.ResultsPerPage))
 	}
-	query.Set("hitsPerPage", strconv.Itoa(s.ResultsPerPage))
 	return query.Encode()
 }
 
@@ -252,7 +253,7 @@ type resultStory struct {
 	Points         int       `json:"points,omitempty"`
 	StoryText      *string   `json:"story_text,omitempty"`
 	CommentText    *string   `json:"comment_text,omitempty"`
-	NumComments    int       `json:"num_comments,omitempty"`
+	NumComments    *int      `json:"num_comments,omitempty"`
 	StoryID        *int      `json:"story_id,omitempty"`
 	StoryTitle     *string   `json:"story_title,omitempty"`
 	StoryURL       *string   `json:"story_url,omitempty"`
