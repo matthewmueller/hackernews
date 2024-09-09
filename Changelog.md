@@ -1,3 +1,8 @@
+# 0.7.0 / 2024-09-09
+
+- make pagination consistent
+- add resolved stories to response
+
 # 0.6.0 / 2024-09-08
 
 - Breaking: `Search` and `SearchRecent` now return search results wrapper.
